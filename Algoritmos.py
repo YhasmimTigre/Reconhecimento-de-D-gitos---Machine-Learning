@@ -156,8 +156,8 @@ class Reg_Log ():
                 batch_Y = lista_y
             
             for xn, yn in zip(batch_X, batch_Y):
-                aux = np.matmul(np.transpose(yn * w_lista), xn, dtype = "float64")
-                vsoma += (yn * xn) / (1 + np.exp(aux, dtype = "float64"))
+                aux = np.matmul(np.transpose(yn * w_lista), xn)
+                vsoma += np.array((yn * xn) / (1 + np.exp(aux, dtype = "float128")), dtype = "float128")
             
             grad_t = (-1 / self.tam_batch) * vsoma
 
