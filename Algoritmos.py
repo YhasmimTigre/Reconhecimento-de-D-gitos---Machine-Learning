@@ -1,9 +1,11 @@
 import numpy as np
 from random import sample
+from sklearn.model_selection import train_test_split
+from warnings import filterwarnings
 
 class PLA ():
 
-    """Função de Perceptron Learning Algorithm
+    """Classe Perceptron Learning Algorithm
         Parâmetros:
         - n_int: número de iterações
         
@@ -21,7 +23,7 @@ class PLA ():
         self.n_int = n_int
 
     def acuracia (self, X : np.array, Y : np.array, w_lista : np.array) -> float:
-        lista_x = np.concatenate((np.ones((len(X), 1)), X), axis = 1)
+        lista_x = np.concatenate((np.ones((len(X), 1)), X), axis = 1) #adicionando o bias
         soma_PCC = 0
 
         for i in range (len(X)):
@@ -33,7 +35,7 @@ class PLA ():
         return (soma_PCC/len(X))
     
     def __construtor_PCI (self, X : np.array, Y : np.array) -> np.array:
-        lista_x = np.concatenate((np.ones((len(X), 1)), X), axis = 1)
+        lista_x = np.concatenate((np.ones((len(X), 1)), X), axis = 1) #adicionando o bias
 
         lista_PCI_x = []
         lista_PCI_y = []
@@ -48,7 +50,7 @@ class PLA ():
         return np.array(lista_PCI_x), np.array(lista_PCI_y) 
 
     def fit (self, X : np.array, Y : np.array) -> None:
-        lista_PCI_x = np.concatenate((np.ones((len(X), 1)), X), axis = 1)
+        lista_PCI_x = np.concatenate((np.ones((len(X), 1)), X), axis = 1) #adicionando o bias
         lista_PCI_y = Y
         self.w_lista, w_otimo = np.zeros(lista_PCI_x.shape[1]), np.zeros(lista_PCI_x.shape[1])
 
@@ -58,6 +60,7 @@ class PLA ():
             ponto_x = lista_PCI_x[ale_index]
             ponto_y = lista_PCI_y[ale_index]
             
+            #atualiza os pesos 
             aux = ponto_x * ponto_y
             w_novo = np.add(self.w_lista, aux)
 
@@ -67,6 +70,7 @@ class PLA ():
 
             self.w_lista = w_novo
 
+            #atualizando a lista de pontos classificados incorretamente
             lista_PCI_x, lista_PCI_y = self.__construtor_PCI (X = X, Y = Y)
             i += 1
         
@@ -92,7 +96,7 @@ class PLA ():
 
 class Reg_Lin ():
 
-    """Função de Regressão Linear
+    """Classe de Regressão Linear
         Parâmetros:
         - n_int: número de iterações
         
@@ -145,7 +149,7 @@ class Reg_Lin ():
 
 class Reg_Log ():
     
-    """Função de Regressão Logística
+    """Classe de Regressão Logística
         Parâmetros:
         - eta: tamanho do passo 
         - n_int: número de iterações
@@ -231,3 +235,75 @@ class Reg_Log ():
 
     def set_w (self, novo_w : np.array) -> None:
         self.w_lista = novo_w
+
+class Weight_Decay (Reg_Log):
+    """Essa classe encontra o melhor valor de lambda
+         para o modelo de Regressão Logística
+         
+         Parâmetros:
+         - eta: tamanho do passo
+         - n_int: número de iterações
+         - tam_batch: tamanho do batch
+         - lamb: valor de lambda
+         
+         Métodos:
+         - fit: treina o modelo
+         - get_Eout: retorna o erro quadrático
+         - get_lista_lambda: retorna a lista de lambdas
+         
+         """
+    
+    def __init__(self, eta = 0.1, n_int = 1000, tam_batch = 50, lamb = 0) -> None:
+        super().__init__ (eta, n_int, tam_batch, lamb)
+    
+    def fit (self, X : np.array, Y : np.array) -> None:
+        X_train, X_val, y_train, y_val = train_test_split (X, Y, test_size = 0.2)
+        self.lista_lambda = []
+        
+        #Atribuindo valores arbitrários aos lambdas:
+        lambdas = [10 ** x for x in range(-5, 5)]
+        lambdas.append(0) #Caso sem weight-decay
+        #ordenados em ordem crescente
+        lambdas = sorted(lambdas)
+
+        Eout_otimo = 1 #Instanciando o melhor erro no pior cenário
+ 
+        filterwarnings('error') #Evitando os warnings pelos lambdas serem valores pequenos
+        for lamb in lambdas:
+            classificador = Reg_Log (n_int = 1000, lamb = lamb)
+
+            try:
+                classificador.fit (X_train, y_train)
+
+            except (RuntimeWarning):
+                continue 
+
+            #Computando o erro quadrático (Eout)
+            EOut = self.get_Eout (classificador.predict (X_val), y_val)                
+            
+            if (EOut < Eout_otimo):
+                Eout_otimo = EOut
+                self.classificador = classificador
+            
+            self.lista_lambda.append([lamb, EOut])
+        
+        #armazena os pesos que obteveram o menor EOut como os pesos finais do modelo 
+        self.w_lista = self.classificador.w_lista
+    
+    def get_Eout (self, pred_y : np.array, y_val : np.array):
+        #Computando o erro quadrático (Eout)
+        soma_PCI = 0
+
+        for i in range (len(y_val)):
+
+            if(pred_y[i] != y_val[i]):
+                soma_PCI += 1
+
+        return (soma_PCI/(len(y_val)))
+    
+    def get_lista_lambda (self) -> list:
+        try:
+            return self.lista_lambda
+        
+        except:
+            return None
