@@ -1,7 +1,7 @@
 # Reconhecimento-de-Dígitos
 Mini-projeto da disciplina de Aprendizagem de Máquina 2023.2
 
-![GitHub repo size](https://img.shields.io/github/repo-size/iuricode/README-template?style=for-the-badge)
+![GitHub repo size](https://img.shields.io/github/repo-size/YhasmimTigre/Reconhecimento-de-Digitos)
 
 > O reconhecimento de dígitos escritos a mão é um problema clássico de classificação na
 área de visão computacional. O problema consiste em receber uma imagem de um número
